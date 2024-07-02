@@ -5,24 +5,29 @@ from ddqn_agent import DDQNAgent
 from environment import KubernetesEnv
 
 # Function to plot training progress and save as images
-def plot_training_progress_and_save(episodes, rewards, epsilons, save_path):
-    plt.figure(figsize=(12, 6))
-    plt.subplot(2, 1, 1)
-    plt.plot(episodes, rewards, label='Total Reward', marker='o')
-    plt.title('Training Progress')
+def plot_training_progress_and_save(episodes, rewards, epsilons, save_path1, save_path2):
+    plt.figure(figsize=(14, 6))
+    
+    # Plot Total Reward
+    plt.subplot(1, 2, 1)
+    plt.plot(episodes, rewards, label='Total Reward', marker='o', color='blue')
+    plt.title('Training Progress - Total Reward')
     plt.xlabel('Episodes')
     plt.ylabel('Total Reward')
     plt.legend()
-
-    plt.subplot(2, 1, 2)
+    plt.tight_layout()
+    plt.savefig(save_path1)  # Save the plot as an image
+    
+    # Plot Epsilon Decay
+    plt.subplot(1, 2, 2)
     plt.plot(episodes, epsilons, label='Epsilon', marker='o', color='orange')
     plt.title('Epsilon Decay')
     plt.xlabel('Episodes')
     plt.ylabel('Epsilon')
     plt.legend()
+    
 
-    plt.tight_layout()
-    plt.savefig(save_path)  # Save the plot as an image
+    plt.savefig(save_path2)  # Save the plot as an image
     plt.close()  # Close the figure to free up memory
 
 if __name__ == "__main__":
@@ -62,16 +67,17 @@ if __name__ == "__main__":
         print(f"Episode: {e}/{episodes}, Total Reward: {total_reward}, Epsilon: {agent.epsilon:.2}")
 
         if agent.epsilon <= 0.01:
-            agent.save(f"ddqn_model_{e}.weights.h5")  # Save the model
+            agent.save(f"ddqn_model_{e}")  # Save the model
             print("Training stopped. Epsilon threshold reached.")
             break
 
         if e % 50 == 0:
-            agent.save(f"ddqn_model_{e}.weights.h5")  # Save the model
+            agent.save(f"ddqn_model_{e}")  # Save the model
 
     # Specify the path where you want to save the plot image
-    save_path = "training_progress_plot.png"
+    save_path1 = "training_progress_1.png"
+    save_path2 = "training_progress_2.png"
 
     # Plotting the training progress and saving as an image
-    plot_training_progress_and_save(range(len(episode_rewards)), episode_rewards, episode_epsilons, save_path)
+    plot_training_progress_and_save(range(len(episode_rewards)), episode_rewards, episode_epsilons, save_path1,save_path2)
 

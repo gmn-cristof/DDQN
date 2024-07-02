@@ -64,31 +64,53 @@ class KubernetesEnv(gym.Env):
         return self.nodes, reward, done, {}
 
     def compute_reward(self, action, pod):
-        # 理想状态是所有节点的资源利用率在50%左右
-        ideal_state = np.full_like(self.nodes, 0.5)
-        
-        # 计算当前状态与理想状态的差异
-        load_diff = np.sum((self.nodes - ideal_state) ** 2, axis=1)
-        reward = -0.01 * np.sum(load_diff)  # 减少负奖励的权重
-        
+        # 超参数
+        alpha = 10.0
+        beta = 10.0
+        gamma = 100.0
+        delta = 64.0
+
         # 过载惩罚，当资源利用率超过1.0时
         overload_penalty = np.sum(self.nodes[self.nodes > 1.0] - 1.0)
-        reward -= 0.3 * overload_penalty  # 减少过载惩罚的权重
-        
+        overload_reward = - alpha * overload_penalty  # 减少过载惩罚的权重
+
         # pod与节点的匹配度奖励
         match_reward = np.dot(pod, self.nodes[action])
-        reward += 1.0 * match_reward  # 增加正奖励的权重
-        
+        match_reward_value = beta * match_reward  # 增加正奖励的权重
+
         # 增加负载均衡的奖励，使所有节点的负载更加均衡
-        balance_reward = -0.5 * np.std(self.nodes, axis=0).sum()
-        reward += balance_reward
+        balance_reward = - gamma * np.std(self.nodes, axis=0).sum()
 
         # 增加集群资源利用率的奖励
         total_utilization = np.mean(self.nodes, axis=0).sum()
-        utilization_reward = 0.5 * total_utilization
-        reward += utilization_reward
+        utilization_reward = delta * total_utilization
+
+        reward = overload_reward + match_reward_value + balance_reward + utilization_reward
+
+        # 打印表格
+        # print(f"{'Parameter':<35} {'Value':<15}")
+        # print("=" * 50)
+        # print(f"{'Alpha (Overload Penalty Weight)':<35} {alpha:<15}")
+        # print(f"{'Beta (Match Reward Weight)':<35} {beta:<15}")
+        # print(f"{'Gamma (Balance Reward Weight)':<35} {gamma:<15}")
+        # print(f"{'Delta (Utilization Reward Weight)':<35} {delta:<15}")
+        # print("-" * 50)
+        # print(f"{'Overload Penalty':<35} {overload_penalty:<15.4f}")
+        # print(f"{'Overload Reward':<35} {overload_reward:<15.4f} (Alpha * Overload Penalty)")
+        # print("-" * 50)
+        # print(f"{'Match Reward':<35} {match_reward:<15.4f}")
+        # print(f"{'Match Reward Value':<35} {match_reward_value:<15.4f} (Beta * Match Reward)")
+        # print("-" * 50)
+        # print(f"{'Balance Reward':<35} {balance_reward:<15.4f} (Gamma * Std Dev of Nodes)")
+        # print("-" * 50)
+        # print(f"{'Total Utilization':<35} {total_utilization:<15.4f}")
+        # print(f"{'Utilization Reward':<35} {utilization_reward:<15.4f} (Delta * Total Utilization)")
+        # print("=" * 50)
+        # print(f"{'Total Reward':<35} {reward:<15.4f}")
+        # print("\n")
 
         return reward
+
 
 
     def render(self, mode='human'):
